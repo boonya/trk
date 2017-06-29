@@ -10,10 +10,11 @@
     "experimentalDecorators": true,
     "target": "es5",
     "typeRoots": [
-      "node_modules/@types"
+      "./node_modules/@types"
     ],
     "types": [
-      "meteor"
+      "meteor",
+      "googlemaps"
     ],
     "lib": [
       "es2016",
