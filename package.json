@@ -8,7 +8,8 @@
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "meteor-client": "meteor-client bundle -s api"
   },
   "private": true,
   "dependencies": {
@@ -22,6 +23,7 @@
     "@angular/router": "^4.0.0",
     "babel-runtime": "^6.23.0",
     "core-js": "^2.4.1",
+    "meteor-rxjs": "^0.4.7",
     "rxjs": "^5.1.0",
     "zone.js": "^0.8.4"
   },
