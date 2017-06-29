@@ -59,6 +59,7 @@ export class MapComponent implements OnInit {
         this.moveTo({lat: position.lat, lng: position.lng});
         // const zoom = this.calculateZoomByAccureacy(position.accuracy);
         // this.zoomTo(zoom);
+        this.setCurrentPositionMarker({lat: position.lat, lng: position.lng});
       })
       .then(this.hideProgress.bind(this))
       .catch((error) => {
@@ -94,7 +95,6 @@ export class MapComponent implements OnInit {
           center: this.config.center,
           mapTypeId: google.maps.MapTypeId.ROADMAP
         });
-
         resolve(this.map);
       } catch (exception) {
         reject(exception);
@@ -125,6 +125,15 @@ export class MapComponent implements OnInit {
    */
   private moveTo(position: { lat: number, lng: number }): void {
     this.map.setCenter(position);
+  }
+
+  private setCurrentPositionMarker(position: { lat: number, lng: number }): google.maps.Marker {
+    return new google.maps.Marker({
+      map: this.map,
+      position: position,
+      draggable: false,
+      icon: 'assets/img/beauty.png'
+    });
   }
 
   private zoomTo(value: number): void {

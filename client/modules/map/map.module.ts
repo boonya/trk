@@ -5,7 +5,9 @@ import {MapComponent} from './map.component';
   declarations: [
     MapComponent
   ],
-  exports: [MapComponent]
+  exports: [
+    MapComponent
+  ]
 })
 
 export class MapModule {

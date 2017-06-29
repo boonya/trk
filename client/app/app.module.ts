@@ -7,13 +7,14 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {AppRoutingModule} from './app-routing.module';
 import {AppComponent} from './app.component';
 
-import {PreloaderModule, NavbarModule, MapModule} from '../modules';
+import {PreloaderComponent, NavbarModule, MapModule} from '../modules';
 
 import {LoggerService, PreloaderService} from '../services';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    PreloaderComponent
   ],
   imports: [
     BrowserModule,
@@ -21,7 +22,6 @@ import {LoggerService, PreloaderService} from '../services';
     HttpModule,
     BrowserAnimationsModule,
     AppRoutingModule,
-    PreloaderModule,
     NavbarModule,
     MapModule
   ],
