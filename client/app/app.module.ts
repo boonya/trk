@@ -7,8 +7,8 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {AppRoutingModule} from './app-routing.module';
 import {AppComponent} from './app.component';
 
-import {PreloaderComponent, NavbarModule, MapModule} from '../modules';
-
+import {NavbarModule, MapModule} from '../modules';
+import {PreloaderComponent} from '../components';
 import {LoggerService, PreloaderService} from '../services';
 
 @NgModule({

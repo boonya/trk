@@ -11,6 +11,7 @@
     "e2e": "ng e2e",
     "client": "ng serve",
     "server": "cd api && meteor run",
+    "mongo": "cd api && meteor mongo",
     "meteor-client": "meteor-client bundle -s api"
   },
   "private": true,

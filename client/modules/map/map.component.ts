@@ -14,8 +14,6 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyB6Fy4-4nZdgd80SDJzM3FWORtb7N0Qsaw';
 const DEFAULT_ZOOM = 10;
 const DEFAULT_LAT = 34.0126238;
 const DEFAULT_LNG = -118.239342;
-// const EQUATOR = 40075004;
-// const LOCATION_REFRESH_INTERVAL = 500;
 
 @Component({
   selector: 'trk-map',
@@ -57,8 +55,6 @@ export class MapComponent implements OnInit {
       })
       .then(([map, position]) => {
         this.moveTo({lat: position.lat, lng: position.lng});
-        // const zoom = this.calculateZoomByAccureacy(position.accuracy);
-        // this.zoomTo(zoom);
         this.setCurrentPositionMarker({lat: position.lat, lng: position.lng});
       })
       .then(this.hideProgress.bind(this))
@@ -141,8 +137,9 @@ export class MapComponent implements OnInit {
   }
 
   // private calculateZoomByAccureacy(accuracy: number): number {
-  //   // return 10;
   //   // Source: http://stackoverflow.com/a/25143326
+  //   const equatorLength = 40075004; // in meters
+  //
   //   const element = document.getElementById('map');
   //   const deviceHeight = element.clientHeight;
   //   const deviceWidth = element.clientWidth;
@@ -151,7 +148,7 @@ export class MapComponent implements OnInit {
   //   const screenSize = Math.min(deviceWidth, deviceHeight);
   //   const requiredMpp = accuracy / screenSize;
   //
-  //   return ((Math.log(EQUATOR / (256 * requiredMpp))) / Math.log(2)) + 1;
+  //   return ((Math.log(equatorLength / (256 * requiredMpp))) / Math.log(2)) + 1;
   // }
 
   private showProgress(): void {

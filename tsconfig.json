@@ -1,8 +1,8 @@
 {
-  "compileOnSave": false,
+  "compileOnSave": true,
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
-    "baseUrl": "client",
+    "baseUrl": ".",
     "sourceMap": true,
     "declaration": false,
     "moduleResolution": "node",
@@ -19,6 +19,18 @@
     "lib": [
       "es2016",
       "dom"
-    ]
-  }
+    ],
+    "paths": {
+      "api/*": [
+        "./api/server/*"
+      ]
+    }
+  },
+  "include": [
+    "client/**/*.ts",
+    "api/server/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
