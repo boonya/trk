@@ -27,8 +27,7 @@
     }
   },
   "include": [
-    "client/**/*.ts",
-    "api/server/**/*.ts"
+    "client/**/*.ts"
   ],
   "exclude": [
     "node_modules"
