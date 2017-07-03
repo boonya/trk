@@ -12,6 +12,7 @@
     "client": "ng serve",
     "server": "cd api && meteor run",
     "mongo": "cd api && meteor mongo",
+    "reset": "cd api && meteor reset",
     "meteor-client": "meteor-client bundle -s api"
   },
   "private": true,

@@ -1,12 +1,13 @@
 export interface Device {
   _id?: string;
-  name?: string;
+  id?: number;
+  title?: string;
   ownerId?: number;
 }
 
 export interface State {
   _id?: string;
-  deviceId?: string;
+  deviceId?: number;
   validity?: boolean;
   ignition?: boolean;
   datetime?: string;
@@ -15,13 +16,7 @@ export interface State {
 
 export interface Visibility {
   _id?: string;
-  deviceId?: string;
+  deviceId?: number;
   isVisible?: boolean;
   ownerId?: number;
-}
-
-export interface Location {
-  lat: number;
-  lng: number;
-  zoom: number;
 }

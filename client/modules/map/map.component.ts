@@ -1,4 +1,5 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Visibilities, Devices, States} from 'api/collections';
 
 import {
   LoggerService,
@@ -21,7 +22,7 @@ const DEFAULT_LNG = -118.239342;
   styleUrls: ['./map.less'],
   providers: [LocationService]
 })
-export class MapComponent implements OnInit {
+export class MapComponent implements OnInit, OnDestroy {
   private config: {
     center: {
       lat: number,
@@ -29,7 +30,9 @@ export class MapComponent implements OnInit {
     },
     zoom: number
   };
+  private platform: any;
   private map: google.maps.Map;
+  private markers: { [deviceId: number]: google.maps.Marker } = {};
 
   constructor(private log: LoggerService,
               private preloader: PreloaderService,
@@ -58,10 +61,15 @@ export class MapComponent implements OnInit {
         this.setCurrentPositionMarker({lat: position.lat, lng: position.lng});
       })
       .then(this.hideProgress.bind(this))
+      .then(this.watchMarkers.bind(this))
       .catch((error) => {
         this.hideProgress();
         this.log.error(error);
       });
+  }
+
+  ngOnDestroy(): void {
+    // @TODO: Destroy observer and other
   }
 
   private initGoogleMapsAPI(): Promise<any> {
@@ -136,20 +144,94 @@ export class MapComponent implements OnInit {
     this.map.setZoom(value);
   }
 
-  // private calculateZoomByAccureacy(accuracy: number): number {
-  //   // Source: http://stackoverflow.com/a/25143326
-  //   const equatorLength = 40075004; // in meters
-  //
-  //   const element = document.getElementById('map');
-  //   const deviceHeight = element.clientHeight;
-  //   const deviceWidth = element.clientWidth;
-  //   // const deviceHeight = this.platform.height();
-  //   // const deviceWidth = this.platform.width();
-  //   const screenSize = Math.min(deviceWidth, deviceHeight);
-  //   const requiredMpp = accuracy / screenSize;
-  //
-  //   return ((Math.log(equatorLength / (256 * requiredMpp))) / Math.log(2)) + 1;
-  // }
+  /**
+   * Source: http://stackoverflow.com/a/25143326
+   *
+   * @param {number} accuracy
+   * @returns {number}
+   */
+  private calculateZoomByAccureacy(accuracy: number): number {
+    const equatorLength = 40075004; // in meters
+    const deviceHeight = this.platform.height();
+    const deviceWidth = this.platform.width();
+    const screenSize = Math.min(deviceWidth, deviceHeight);
+    const requiredMpp = accuracy / screenSize;
+    return ((Math.log(equatorLength / (256 * requiredMpp))) / Math.log(2)) + 1;
+  }
+
+  private watchMarkers(): void {
+    const userId = 1; // @TODO: Use Meteor.userId() instead
+
+    this.getStreams(userId)
+      .subscribe(stream => {
+        stream.forEach(item => {
+          const data = this.processStream(item);
+          const deviceId = 12121;
+          this.upsertMarker(deviceId, data.position);
+        });
+      });
+  }
+
+  private getStreams(userId): any {
+    return States.find();
+    // return Devices.find();
+    // return Visibilities.find();
+
+    // Visibilities.find({ownerId: userId})
+
+    // return Visibilities.find({ownerId: userId, isVisible: true})
+    //   .flatMap(visibilities => {
+    //     const deviceIds = [];
+    //     visibilities.forEach(visibility => deviceIds.push(visibility.deviceId));
+    //
+    //     const devices = Devices.find({_id: {$in: deviceIds}}).fetch();
+    //     const states = States.find({deviceId: {$in: deviceIds}}).fetch();
+    //
+    //     const result = [];
+    //     devices.forEach(device => {
+    //       let data = null;
+    //       states.forEach(state => {
+    //         if (state.deviceId === device._id) {
+    //           data = state;
+    //           data['title'] = device.name;
+    //         }
+    //       });
+    //       result.push(data);
+    //     });
+    //     return result;
+    //   });
+  }
+
+  private processStream(data) {
+    const sm = data.position.split(',');
+    return {
+      position: {
+        lat: parseFloat(sm[0]),
+        lng: parseFloat(sm[1])
+      }
+    };
+  }
+
+  private upsertMarker(deviceId: number, position: { lat: number, lng: number }): void {
+    if (deviceId in this.markers) {
+      this.updateMarker(deviceId, position);
+    } else {
+      this.createMarker(deviceId, position);
+    }
+  }
+
+  private updateMarker(deviceId: number, position: { lat: number, lng: number }): void {
+    this.markers[deviceId].setPosition(position);
+  }
+
+  private createMarker(deviceId: number, position: { lat: number, lng: number }): void {
+    this.markers[deviceId] = new google.maps.Marker({
+      map: this.map,
+      position: position,
+      draggable: false,
+      icon: 'assets/img/car.png'
+    });
+  }
 
   private showProgress(): void {
     this.preloader.show();
