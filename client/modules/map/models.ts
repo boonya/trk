@@ -3,3 +3,13 @@ export interface CurrentPosition {
   lat: number;
   lng: number;
 }
+
+export interface MarkerData {
+  deviceId: number;
+  title: string;
+  isVisible: boolean;
+  position: { lat: number; lng: number };
+  datetime: string;
+  ignition: boolean;
+  validity: boolean;
+}

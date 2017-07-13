@@ -7,6 +7,9 @@
     "paths": {
       "api/*": [
         "../api/server/*"
+      ],
+      "config/*": [
+        "../api/server/config/*"
       ]
     }
   },

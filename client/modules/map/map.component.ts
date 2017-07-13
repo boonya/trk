@@ -1,5 +1,8 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {Visibilities, Devices, States} from 'api/collections';
+import {config} from 'api/config';
+
+import {Observable, Observer, Subject} from 'rxjs/Rx';
 
 import {
   LoggerService,
@@ -7,14 +10,15 @@ import {
   PreloaderService
 } from '../../services';
 
-import {CurrentPosition} from './models';
+import {CurrentPosition, MarkerData} from './models';
+import {Visibility, Device, State} from 'api/models';
 
 const GOOGLE_MAPS_JS_FILE = 'https://maps.googleapis.com/maps/api/js?key={API_KEY}';
-const GOOGLE_MAPS_API_KEY = 'AIzaSyB6Fy4-4nZdgd80SDJzM3FWORtb7N0Qsaw';
+const GOOGLE_MAPS_API_KEY = config.google.api.key;
 
-const DEFAULT_ZOOM = 10;
-const DEFAULT_LAT = 34.0126238;
-const DEFAULT_LNG = -118.239342;
+const DEFAULT_ZOOM = config.map.zoom;
+const DEFAULT_LAT = config.map.center.latitude;
+const DEFAULT_LNG = config.map.center.longitude;
 
 @Component({
   selector: 'trk-map',
@@ -161,74 +165,138 @@ export class MapComponent implements OnInit, OnDestroy {
 
   private watchMarkers(): void {
     const userId = 1; // @TODO: Use Meteor.userId() instead
+    const _this = this;
 
-    this.getStreams(userId)
-      .subscribe(stream => {
-        stream.forEach(item => {
-          const data = this.processStream(item);
-          const deviceId = 12121;
-          this.upsertMarker(deviceId, data.position);
+    this.getStream(userId)
+      .subscribe(
+        function (x) {
+          for (const i in x) {
+            if (!x.hasOwnProperty(i)) {
+              continue;
+            }
+            _this.controlMarker(x[i].deviceId, x[i]);
+          }
+        },
+        function (err) {
+          console.log('Error: ', err);
+        },
+        function () {
+          console.log('Completed');
         });
+  }
+
+  private getStream(userId: number): Observable<any> {
+    return this.watchVisibilities(userId)
+      .combineLatest(
+        this.watchDevices(userId),
+        this.watchStates(userId),
+        (visibilities, devices, states) => this.getMergedData(visibilities, devices, states)
+      );
+  }
+
+  private watchVisibilities(userId: number): any {
+    return Visibilities.find({ownerId: userId});
+  }
+
+  private watchDevices(userId: number): any {
+    return Visibilities.find({ownerId: userId})
+      .flatMap(visibilities => {
+        const deviceIds = [];
+        for (let i = 0; visibilities.length > i; i++) {
+          deviceIds.push(visibilities[i].deviceId);
+        }
+        return Devices.find({id: {$in: deviceIds}});
       });
   }
 
-  private getStreams(userId): any {
-    return States.find();
-    // return Devices.find();
-    // return Visibilities.find();
-
-    // Visibilities.find({ownerId: userId})
-
-    // return Visibilities.find({ownerId: userId, isVisible: true})
-    //   .flatMap(visibilities => {
-    //     const deviceIds = [];
-    //     visibilities.forEach(visibility => deviceIds.push(visibility.deviceId));
-    //
-    //     const devices = Devices.find({_id: {$in: deviceIds}}).fetch();
-    //     const states = States.find({deviceId: {$in: deviceIds}}).fetch();
-    //
-    //     const result = [];
-    //     devices.forEach(device => {
-    //       let data = null;
-    //       states.forEach(state => {
-    //         if (state.deviceId === device._id) {
-    //           data = state;
-    //           data['title'] = device.name;
-    //         }
-    //       });
-    //       result.push(data);
-    //     });
-    //     return result;
-    //   });
+  private watchStates(userId: number): any {
+    return Visibilities.find({ownerId: userId})
+      .flatMap(visibilities => {
+        const deviceIds = [];
+        for (let i = 0; visibilities.length > i; i++) {
+          deviceIds.push(visibilities[i].deviceId);
+        }
+        return States.find({deviceId: {$in: deviceIds}});
+      });
   }
 
-  private processStream(data) {
-    const sm = data.position.split(',');
-    return {
-      position: {
-        lat: parseFloat(sm[0]),
-        lng: parseFloat(sm[1])
+  private getMergedData(visibilities: Visibility[], devices: Device[], states: State[]): MarkerData[] {
+    const data = {};
+    const markers: MarkerData[] = [];
+
+    for (let i = 0; devices.length > i; i++) {
+      data[devices[i].id] = data[devices[i].id] || {};
+      data[devices[i].id] = {
+        ...data[devices[i].id], ...{
+          deviceId: devices[i].id,
+          title: devices[i].title
+        }
+      };
+    }
+
+    for (let i = 0; visibilities.length > i; i++) {
+      data[visibilities[i].deviceId] = data[visibilities[i].deviceId] || {};
+      data[visibilities[i].deviceId] = {
+        ...data[visibilities[i].deviceId], ...{
+          isVisible: visibilities[i].isVisible
+        }
+      };
+    }
+
+    for (let i = 0; states.length > i; i++) {
+      data[states[i].deviceId] = data[states[i].deviceId] || {};
+      const position = {
+        lat: parseFloat(states[i].position.split(',')[0]),
+        lng: parseFloat(states[i].position.split(',')[1])
+      };
+      data[states[i].deviceId] = {
+        ...data[states[i].deviceId], ...{
+          validity: states[i].validity,
+          ignition: states[i].ignition,
+          datetime: states[i].datetime,
+          position: position
+        }
+      };
+    }
+
+    for (const key in data) {
+      if (!data[key].hasOwnProperty('deviceId')
+        || !data[key].hasOwnProperty('title')
+        || !data[key].hasOwnProperty('isVisible')
+        || !data[key].hasOwnProperty('validity')
+        || !data[key].hasOwnProperty('ignition')
+        || !data[key].hasOwnProperty('datetime')
+        || !data[key].hasOwnProperty('position')
+      ) {
+        continue;
       }
-    };
+      markers.push(data[key]);
+    }
+
+    return markers;
   }
 
-  private upsertMarker(deviceId: number, position: { lat: number, lng: number }): void {
+  private controlMarker(deviceId: number, data: MarkerData): void {
     if (deviceId in this.markers) {
-      this.updateMarker(deviceId, position);
+      this.updateMarker(deviceId, data);
     } else {
-      this.createMarker(deviceId, position);
+      this.createMarker(deviceId, data);
     }
   }
 
-  private updateMarker(deviceId: number, position: { lat: number, lng: number }): void {
-    this.markers[deviceId].setPosition(position);
+  private updateMarker(deviceId: number, data: MarkerData): void {
+    this.markers[deviceId].setOptions({
+      position: data.position,
+      visible: data.isVisible
+    });
   }
 
-  private createMarker(deviceId: number, position: { lat: number, lng: number }): void {
+  private createMarker(deviceId: number, data: MarkerData): void {
     this.markers[deviceId] = new google.maps.Marker({
       map: this.map,
-      position: position,
+      position: data.position,
       draggable: false,
+      visible: data.isVisible,
       icon: 'assets/img/car.png'
     });
   }
